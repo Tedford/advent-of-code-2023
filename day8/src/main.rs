@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
 use crate::Direction::{Left, Right};
+use num::Integer;
 
 #[derive(Clone, Debug)]
 struct Branch {
@@ -42,42 +43,16 @@ fn main() {
     println!("[INPUT]: Journey Steps: {}", ghost_walk(&input_map));
 }
 
-fn walk(map: &Map) -> i32 {
-    //
-    // let mut steps = 0;
-    // let mut at_end = false;
-    // let mut i = 0;
-    //
-    // let mut branch = map.branches.get("AAA").expect("The starting location AAA was not found");
-    //
-    // while !at_end {
-    //     steps += 1;
-    //
-    //     let location = match &map.directions[i] {
-    //         Left => &branch.left,
-    //         _ => &branch.right
-    //     };
-    //
-    //     if location == "ZZZ" {
-    //         at_end = true;
-    //     } else {
-    //         branch = map.branches.get(location).expect(&*format!("The next location {location} was not found"));
-    //         i += 1;
-    //         i %= map.directions.len();
-    //     }
-    // }
-    //
-    // steps
+fn walk(map: &Map) -> i64 {
     walk_branch(map.branches.get("AAA").expect("The starting location AAA was not found"), map, |location| location == "ZZZ")
 }
 
-fn walk_branch(branch: &Branch, map: &Map, success: impl Fn(&str)->bool) -> i32 {
+fn walk_branch(branch: &Branch, map: &Map, success: impl Fn(&str)->bool) -> i64 {
 
     let mut steps = 0;
     let mut at_end = false;
     let mut i = 0;
 
-    // let mut branch = map.branches.get("AAA").expect("The starting location AAA was not found");
     let mut b = branch;
     while !at_end {
         steps += 1;
@@ -100,42 +75,13 @@ fn walk_branch(branch: &Branch, map: &Map, success: impl Fn(&str)->bool) -> i32 
 }
 
 
-fn ghost_walk(map: &Map) -> i32 {
-    let mut steps = 0;
-    let mut at_end = false;
-    let mut i = 0;
-    let direction_count = map.directions.len();
-
-    let mut branches = map.branches
+fn ghost_walk(map: &Map) -> i64 {
+    map.branches
         .iter()
         .filter(|(k, _)| k.ends_with('A'))
-        .map(|(_, v)| v)
-        .collect::<Vec<&Branch>>();
-
-    let branch_count = branches.len();
-
-    while !at_end {
-
-        let z_count = branches.iter().filter(|b|b.name.ends_with('Z')).count();
-
-
-        if z_count == branch_count {
-            at_end = true;
-        } else {
-            steps += 1;
-            branches = branches.iter().map(|b|
-                match &map.directions[i] {
-                    Left => map.branches.get(&b.left).expect(&*format!("The next location {} was not found", b.left)),
-                    _ => map.branches.get(&b.right).expect(&*format!("The next location {} was not found", b.right))
-                }
-            ).collect::<Vec<&Branch>>();
-            i += 1;
-            i %= direction_count;
-        }
-    }
-
-
-    steps
+        .map(|(_, v)| walk_branch(v, map, |location|location.ends_with('Z')))
+        .reduce(|a,b|a.lcm(&b))
+        .unwrap()
 }
 
 fn parse_map(lines: &Vec<String>) -> Result<Map, String> {
